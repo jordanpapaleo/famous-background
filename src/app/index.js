@@ -21,7 +21,11 @@ class App extends Node {
     }
 
     renderTest2() {
-        let quads = [new Node(), new Node(), new Node(), new Node()];
+        let sections = [
+            new Node(), new Node(),
+            new Node(), new Node()
+        ];
+
         let modifier = new Node();
         modifier
             .setSizeMode('absolute', 'absolute', 'absolute')
@@ -29,8 +33,8 @@ class App extends Node {
             .setAlign(.5, .5)
             .setMountPoint(.5, .5);
 
-        for(let i = 0, j = quads.length; i < j; i++) {
-            let quad = quads[i];
+        for(let i = 0, j = sections.length; i < j; i++) {
+            let section = sections[i];
             let mountPoint = [0, 0], backgroundPosition = 'left top';
 
             switch(i) {
@@ -52,14 +56,14 @@ class App extends Node {
                     break;
             }
 
-            quad
+            section
                 .setSizeMode('relative', 'relative')
                 .setProportionalSize(.5, .5)
                 .setAlign(.5, .5)
                 .setMountPoint(mountPoint[0], mountPoint[1])
-                .setOrigin(.5, .5);
-            quad.scale = new Scale(quad);
-            quad.domEl = new DOMElement(quad, {
+                .setOrigin(mountPoint[0], mountPoint[1]);
+            section.scale = new Scale(section);
+            section.domEl = new DOMElement(section, {
                     tagName: 'div',
                     classes: ['logo'],
                     properties: {
@@ -68,27 +72,27 @@ class App extends Node {
                     }
                 });
 
-            quad.addUIEvent('mouseover');
-            quad.addUIEvent('mouseout');
+            section.addUIEvent('mouseover');
+            section.addUIEvent('mouseout');
 
-            quad.onReceive = function(event, payload){
-                quad.scale.halt();
+            section.onReceive = function(event, payload){
+                section.scale.halt();
 
                 if(event === 'mouseover'){
-                    quad.domEl.setProperty('z-index', 6);
-                    quad.scale.set(1.1, 1.1, 1.1, {
+                    section.domEl.setProperty('z-index', 6);
+                    section.scale.set(1.1, 1.1, 1.1, {
                         duration: 250
                     });
                 } else if(event === 'mouseout') {
-                    quad.scale.set(1, 1, 1, {
+                    section.scale.set(1, 1, 1, {
                         duration: 250
                     }, () => {
-                        quad.domEl.setProperty('z-index', 5);
+                        section.domEl.setProperty('z-index', 5);
                     });
                 }
             };
 
-            modifier.addChild(quad);
+            modifier.addChild(section);
         }
 
         this.addChild(modifier);
