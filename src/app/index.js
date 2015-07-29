@@ -25,7 +25,7 @@ class App extends Node {
             hasShimmy: true,
             width: 600,
             height: 600,
-            ratio: 10
+            ratio: 15
         };
 
         this.setEvents();
