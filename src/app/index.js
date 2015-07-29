@@ -1,15 +1,15 @@
 import isEqual          from 'lodash/lang/isEqual';
+import {Piece}          from './Piece';
+import observers        from './observers';
 
 //Famous Components
-const DOMElement        = Famous.domRenderables.DOMElement;
-const GestureHandler    = Famous.components.GestureHandler;
+//const GestureHandler    = Famous.components.GestureHandler;
 const Curves            = Famous.transitions.Curves;
 const Node              = Famous.core.Node;
-const Rotation          = Famous.components.Rotation;
-const Position          = Famous.components.Position;
-const Scale             = Famous.components.Scale;
-const Size              = Famous.components.Size;
 
+/*
+ *
+ */
 class App extends Node {
     constructor() {
         super();
@@ -22,186 +22,167 @@ class App extends Node {
             .setOrigin(0, 0);
 
         this.model = {
-            hasShimmer: true
+            hasShimmy: true,
+            width: 600,
+            height: 600,
+            ratio: 10
         };
 
-        this.onReceive = (event, payload) => {
-
-            //NOT WORKING
-            if(event === 'section-active') {
-                console.log('here');
-                this.model.hasShimmer = !payload;
-            }
-        };
-
-        this.renderSection();
-        this.loadSection();
+        this.setEvents();
+        this.createModifier();
+        this.renderPieces();
+        this.placePieces();
 
         setInterval(() => {
-            //console.log('hasShimmer', this.model.hasShimmer);
-            if(this.model.hasShimmer) {
-                this.initShimmer();
+            if(this.model.hasShimmy) {
+                this.initShimmy();
             }
-        }, 5000); ///5000 ms is average breath frequenct
+        }, 5000); ///Fun Fact: 5000ms is the average human breath frequency
     }
 
-    renderSection() {
-        var ratio = 12;
-        this.ratio = ratio;
+    setEvents() {
+        observers.pieceClicked.subscribe((payload) => {
+            if(payload) {
+                this.initViewController(payload);
+            }
+        });
+    }
 
-        let width = 600;
-        let height = 600;
-
-        this.sections = [];
-
-        let nodeCount = ratio * ratio;
-        while(nodeCount) {
-            this.sections.push(new Node());
-            nodeCount--;
-        }
-
-        let modifier = new Node();
-        modifier
-            .setSizeMode('absolute', 'absolute', 'absolute')
-            .setAbsoluteSize(width, height)
+    /*
+     * a simple modifier node to better control the pieces
+     */
+    createModifier() {
+        this.modifier = new Node();
+        this.modifier
+            .setSizeMode('absolute', 'absolute')
+            .setAbsoluteSize(this.model.width, this.model.height)
             .setAlign(.5, .5)
             .setMountPoint(.5, .5);
 
-        var size = { x: width / ratio, y: height / ratio};
-
-        for(let i = 0, j = this.sections.length; i < j; i++) {
-            var row = Math.floor(i / ratio);
-            var column = Math.floor(i % ratio);
-
-            let position = [row * size.x, column * size.y];
-            let section = this.sections[i];
-
-            section
-                .setSizeMode('absolute', 'absolute')
-                .setAbsoluteSize(size.x, size.y)
-                .setAlign(0, 0)
-                .setMountPoint(0, 0)
-                .setOrigin(.5, .5);
-
-            section.model = {
-                position,
-                layout: [row, column]
-            };
-
-            let startingPosition = this._getRandomPosition();
-
-            section.rotation = new Rotation(section);
-            section.position = new Position(section);
-            section.position.setX(startingPosition[0]);
-            section.position.setY(startingPosition[1]);
-            section.scale = new Scale(section);
-            section.domEl = new DOMElement(section, {
-                tagName: 'div',
-                classes: ['logo'],
-                properties: {
-                    'box-sizing': 'border-box',
-                    'backface-visibility': 'hidden',
-                    'background-position': `${-position[0]}px ${-position[1]}px`,
-                    'background-size': `${100 * ratio}% ${100 * ratio}%`,
-                    'z-index': 5,
-                    'cursor': 'pointer'
-                }
-            });
-
-            //EVENTS
-            section.addUIEvent('mouseover');
-            section.addUIEvent('mouseout');
-            section.addUIEvent('click');
-            section.onReceive = (event, payload) => {
-                //TODO encapsulate cases into functions
-                switch(event) {
-                    case 'click':
-                        this.toggleSection(section);
-                        this.initRipple(section);
-                        break;
-                    case 'mouseover':
-                        if(!section.model.isAnimating) {
-                            section.scale.halt();
-                            section.rotation.halt();
-                            section.domEl.setProperty('z-index', 6);
-                            section.scale.set(1.2, 1.2, 1.2, {
-                                duration: 500,
-                                curve: Curves.easeOutBounce
-                            });
-                        }
-                        break;
-                    case 'mouseout':
-                        if(!section.model.isAnimating) {
-                            section.scale.halt();
-                            section.rotation.halt();
-                            section.scale.set(1, 1, 1, {
-                                duration: 500,
-                                curve: Curves.easeOut
-                            }, () => {
-                                section.emit('section-active', false);
-                                section.domEl.setProperty('z-index', 5);
-                            });
-                        }
-                        break;
-                }
-            };
-
-            modifier.addChild(section);
-        }
-
-        this.addChild(modifier);
+        this.addChild(this.modifier);
     }
 
-    loadSection() {
-        this.sections.forEach((section) => {
+    /*
+     *
+     */
+    renderPieces() {
+        const totalPieces = this.model.ratio * this.model.ratio;
+        const size = [this.model.width / this.model.ratio, this.model.height / this.model.ratio];
+
+        this.pieces = this.getPieces(totalPieces);
+
+        for(let i = 0, j = this.pieces.length; i < j; i++) {
+            const piece = this.pieces[i];
+            const row = Math.floor(i / this.model.ratio);
+            const column = Math.floor(i % this.model.ratio);
+
+            const position = [row * size[0], column * size[1]];
+            const scalePercentage = 100 * this.model.ratio;
+
+            piece.model.position = position;
+            piece.model.layout = [row, column];
+
+            piece.domEl.setProperty('background-position', `${-position[0]}px ${-position[1]}px`);
+            piece.domEl.setProperty('background-size', `${scalePercentage}% ${scalePercentage}%`);
+
+            this.modifier.addChild(piece);
+        }
+    }
+
+    /*
+     * @params {integer} The number of pieces that will be used to create the ad
+     * @returns {array} Nodes
+     */
+    getPieces(totalPieces) {
+        let pieces = [];
+
+        while(totalPieces) {
+            pieces.push(new Piece({
+                size: [this.model.width / this.model.ratio, this.model.height / this.model.ratio]
+
+            }));
+
+            totalPieces--;
+        }
+
+        return pieces;
+    }
+
+    /*
+     * Animates the pieces from their random starting position into their place
+     */
+    placePieces() {
+        this.pieces.forEach((piece) => {
             let duration = Math.random() * (1500 - 1000) + 1000;
 
-            section.position.setX(section.model.position[0], {
+            piece.position.setX(piece.model.position[0], {
                 duration,
                 curve: Curves.inBack
             });
 
-            section.position.setY(section.model.position[1], {
+            piece.position.setY(piece.model.position[1], {
                 duration,
                 curve: Curves.outBack
             });
         });
     }
 
-    initShimmer() {
-        for(let i = 0, j = this.sections.length; i < j; i++) {
-            if(this.model.hasShimmer) {
+    /*
+     * Loops through all pieces and applies a calls a function to give visual awareness to the piece
+     */
+    initShimmy() {
+        for(let i = 0, j = this.pieces.length; i < j; i++) {
+            if(this.model.hasShimmy) {
                 setTimeout(() => {
-                    this._shimmer(this.sections[i]);
+                    this.pieces[i].shimmy();
                 }, Math.ceil(Math.random() * 1000 - 500));
             }
         }
     }
-    
-    initRipple(section) {
-        this.flipCard(section, 1, 3);
+
+    /*
+     * @param {Node}
+     */
+    initViewController(piece) {
+        this.cycleView(piece, 1, 3);
     }
 
-    flipCard(section, radius, reach) {
-        let adjacentLayouts = this.getAdjacentLayouts(section.model.layout, radius, reach);
+    /*
+     * recursive function controlling the gathering and toggleing of content views
+     * @param {array} this is the [x, y]
+     * @param {integer} this is the [x, y]
+     * @param {integer} this is the [x, y]
+     */
+    cycleView(piece, radius, reach) {
+        let adjacentLayouts = this.getAdjacentLayouts(piece.model.layout, radius, reach);
 
+        // the changes in radius and reach affect the length of the adjacent layouts that get returned
         if(adjacentLayouts.length) {
             adjacentLayouts.forEach((layout) => {
-                this.rippleFlip(layout);
+                let adjacentPiece = this.getPiece(layout);
+
+                if(adjacentPiece) {
+                    adjacentPiece.toggle();
+                }
             });
 
             radius++;
             reach += 2;
 
             setTimeout(() => {
-                this.flipCard(section, radius, reach);
+                this.cycleView(piece, radius, reach);
             }, 100);
         }
     }
 
+    /*
+     * gets all of the layouts in a certain view radius
+     * @param {array} this is the [x, y]
+     * @param {integer}
+     * @param {integer}
+     */
     getAdjacentLayouts(position, radius, reach) {
         let adjacentLayouts = [];
-
         let topLeft = [position[0] - radius, position[1] - radius];
         let bottomRight = [position[0] + radius, position[1] + radius];
 
@@ -228,13 +209,13 @@ class App extends Node {
         }
 
         layoutsA.forEach((layout) => {
-            if(layout[0] >= 0  && layout[0] < this.ratio && layout[1] >= 0 && layout[1] < this.ratio) {
+            if(layout[0] >= 0  && layout[0] < this.model.ratio && layout[1] >= 0 && layout[1] < this.model.ratio) {
                 adjacentLayouts.push(layout);
             }
         });
 
         layoutsB.forEach((layout) => {
-            if(layout[0] >= 0  && layout[0] < this.ratio && layout[1] >= 0 && layout[1] < this.ratio) {
+            if(layout[0] >= 0  && layout[0] < this.model.ratio && layout[1] >= 0 && layout[1] < this.model.ratio) {
                 adjacentLayouts.push(layout);
             }
         });
@@ -242,71 +223,21 @@ class App extends Node {
         return adjacentLayouts;
     }
 
-    rippleFlip(layout) {
-        let section = this.getSection(layout);
+    /*
+     * uses [x, y] position and matches it to a Piece node
+     * @param {array} this is the [x, y]
+     */
+    getPiece(layout) {
+        let piece;
 
-        if(section) {
-            this.toggleSection(section);
-        }
-    }
-
-    getSection(layout) {
-        let section;
-
-        for(let i = 0, j = this.sections.length; i < j; i++) {
-            if(isEqual(layout, this.sections[i].model.layout)) {
-                section = this.sections[i];
+        for(let i = 0, j = this.pieces.length; i < j; i++) {
+            if(isEqual(layout, this.pieces[i].model.layout)) {
+                piece = this.pieces[i];
                 break;
             }
         }
 
-        return section;
-    }
-
-    toggleSection(section) {
-        section.model.isAnimating = true;
-        section.rotation.set(0, Math.PI, 0, {
-            duration: 1000,
-            curve: Curves.outBack
-        }, () => {
-            section.rotation.set(0, 0, 0, {
-                duration: 1000,
-                curve: Curves.outBack
-            }, () => {
-                section.model.isAnimating = false;
-            });
-        });
-
-        /*section.scale.halt();
-        section.scale.set(1.2, 1.2, 1.2, {
-            duration: 500,
-            curve: Curves.easeOutBounce
-        }, () => {
-            section.scale.set(1, 1, 1, {
-                duration: 500,
-                curve: Curves.easeOutBounce
-            });
-        });*/
-    }
-
-
-
-    _getRandomPosition(x, y) {
-        x = (Math.random() * window.innerWidth) - (window.innerWidth / 2);
-        y = (Math.random() * window.innerHeight) - (window.innerHeight / 2);
-
-        return [x, y];
-    }
-
-    _shimmer(section) {
-        section.scale.halt();
-        section.scale.set(1.2, 1.2, 1.2, {
-            duration: 200
-        }, () => {
-            section.scale.set(1, 1, 1, {
-                duration: 200
-            });
-        });
+        return piece;
     }
 }
 
