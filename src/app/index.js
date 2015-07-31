@@ -15,19 +15,24 @@ const Scale             = Famous.components.Scale;
  *
  */
 class App extends Node {
-    constructor() {
+    constructor(width = window.innerWidth / 2, height = window.innerHeight / 2) {
         super();
 
         this.model = {
+            appWidth: width,
+            appHeight: height,
             hasShimmy: true,
-            width: 250,
-            height: 250,
             ratio: 10
         };
 
+        let minProportion = (this.model.appWidth <= this.model.appHeight) ? this.model.appWidth : this.model.appHeight;
+        console.log('minPro',minProportion);
+        this.model.width = minProportion;
+        this.model.height = minProportion;
+
         this
             .setSizeMode('absolute', 'absolute')
-            .setAbsoluteSize(300, 250)
+            .setAbsoluteSize(this.model.appWidth, this.model.appHeight)
             .setAlign(.5, .5)
             .setMountPoint(.5, .5)
             .setOrigin(.5, .5);
@@ -324,4 +329,4 @@ class App extends Node {
 }
 
 const scene = Famous.core.FamousEngine.createScene('#app');
-window.app  = scene.addChild(new App());
+window.app  = scene.addChild(new App(300, 250));
