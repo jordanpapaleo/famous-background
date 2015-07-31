@@ -121,10 +121,10 @@ class App extends Node {
         this.modifier.scale.set(.8, .8, .8, {
             duration,
             curve: Curves.inOutBack
-        });
-
-        this.cta.opacity.set(1, {
-            duration
+        }, () => {
+            this.cta.opacity.set(1, {
+                duration
+            });
         });
     }
 

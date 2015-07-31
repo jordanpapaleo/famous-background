@@ -16,7 +16,7 @@ export class Piece extends Node {
         super();
 
         this.model = model;
-        this.model.isFront = true;
+        this.model.isFront = false;
         this.model.images = [
             'famous-logo.svg',
             'be-creative.svg',
@@ -125,7 +125,6 @@ export class Piece extends Node {
                 duration: 500,
                 curve: Curves.easeOut
             }, () => {
-                //this.emit('section-active', false);
                 this.domEl.setProperty('z-index', 5);
             });
         }
@@ -153,6 +152,17 @@ export class Piece extends Node {
             if(this.model.currentImageIndex < this.model.images.length) {
                 this.domEl.setProperty('background-image', `url('images/${this.model.images[this.model.currentImageIndex]}')`);
                 this.model.currentImageIndex++;
+            } else {
+                let path = '';
+
+                if(this.model.isFront) {
+                    path = `url('images/${this.model.images[this.model.images.length -1]}')`;
+                } else {
+                    path = `url('images/${this.model.images[0]}')`;
+                }
+
+                this.domEl.setProperty('background-image', path);
+                this.model.isFront = !this.model.isFront;
             }
 
             this.rotation.set(0, (Math.PI * 0) / 180, 0, {
