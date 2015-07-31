@@ -1,11 +1,11 @@
 import observers        from './observers';
 
 //Famous Components
-const DOMElement        = Famous.domRenderables.DOMElement;
 const Curves            = Famous.transitions.Curves;
+const DOMElement        = Famous.domRenderables.DOMElement;
 const Node              = Famous.core.Node;
-const Rotation          = Famous.components.Rotation;
 const Position          = Famous.components.Position;
+const Rotation          = Famous.components.Rotation;
 const Scale             = Famous.components.Scale;
 
 /*
@@ -17,6 +17,16 @@ export class Piece extends Node {
 
         this.model = model;
         this.model.isFront = true;
+        this.model.images = [
+            'famous-logo.svg',
+            'be-creative.svg',
+            'famous-logo.svg',
+            'be-empowered.svg',
+            'famous-logo.svg',
+            'be-famous.svg',
+            'famous-logo-back.svg'
+        ];
+        this.model.currentImageIndex = 0;
 
         this
             .setSizeMode('absolute', 'absolute')
@@ -27,9 +37,9 @@ export class Piece extends Node {
 
         this.rotation = new Rotation(this);
         this.scale = new Scale(this);
-        this.position = new Position(this);
 
         let startingPosition = this._getRandomPosition();
+        this.position = new Position(this);
         this.position.setX(startingPosition[0]);
         this.position.setY(startingPosition[1]);
 
@@ -37,9 +47,11 @@ export class Piece extends Node {
             tagName: 'div',
             classes: ['piece'],
             properties: {
-                'background-image': 'url(\'images/famous-logo.svg\')'
+                'background-image': `url('images/${this.model.images[this.model.currentImageIndex]}')`
             }
         });
+
+        this.model.currentImageIndex++;
 
         this._setEvents();
     }
@@ -138,18 +150,19 @@ export class Piece extends Node {
             duration: 750,
             curve: Curves.inBack
         }, () => {
-            if(this.model.isFront) {
-                this.domEl.setProperty('background-image', 'url(\'images/famous-logo-back.svg\')');
-                this.model.isFront = false;
-            } else {
-                this.domEl.setProperty('background-image', 'url(\'images/famous-logo.svg\')');
-                this.model.isFront = true;
+            if(this.model.currentImageIndex < this.model.images.length) {
+                this.domEl.setProperty('background-image', `url('images/${this.model.images[this.model.currentImageIndex]}')`);
+                this.model.currentImageIndex++;
             }
 
             this.rotation.set(0, (Math.PI * 0) / 180, 0, {
                 duration: 750,
                 curve: Curves.outBack
             }, () => {
+                if(this.model.currentImageIndex === this.model.images.length) {
+                    observers.finishAd.update(true);
+                }
+
                 this.model.isAnimating = false;
             });
         });

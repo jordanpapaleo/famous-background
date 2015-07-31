@@ -5,7 +5,11 @@ import observers        from './observers';
 //Famous Components
 //const GestureHandler    = Famous.components.GestureHandler;
 const Curves            = Famous.transitions.Curves;
+const DOMElement        = Famous.domRenderables.DOMElement;
 const Node              = Famous.core.Node;
+const Opacity           = Famous.components.Opacity;
+const Position          = Famous.components.Position;
+const Scale             = Famous.components.Scale;
 
 /*
  *
@@ -14,20 +18,30 @@ class App extends Node {
     constructor() {
         super();
 
-        this
-            .setSizeMode('relative', 'relative', 'relative')
-            .setProportionalSize(1, 1, 1)
-            .setAlign(0, 0)
-            .setMountPoint(0, 0)
-            .setOrigin(0, 0);
-
         this.model = {
             hasShimmy: true,
-            width: 600,
-            height: 600,
-            ratio: 15
+            width: 250,
+            height: 250,
+            ratio: 10
         };
 
+        this
+            .setSizeMode('absolute', 'absolute')
+            .setAbsoluteSize(300, 250)
+            .setAlign(.5, .5)
+            .setMountPoint(.5, .5)
+            .setOrigin(.5, .5);
+
+        this.domEL = new DOMElement(this, {
+            classes: ['app'],
+            'properties': {
+                'border': '1px solid #333333',
+                'overflow': 'hidden'
+            }
+        });
+
+        this.preloadImages();
+        this.renderCTA();
         this.setEvents();
         this.createModifier();
         this.renderPieces();
@@ -40,11 +54,77 @@ class App extends Node {
         }, 5000); ///Fun Fact: 5000ms is the average human breath frequency
     }
 
+    preloadImages() {
+        let images = [
+            'famous-logo.svg',
+            'be-creative.svg',
+            'famous-logo.svg',
+            'be-empowered.svg',
+            'famous-logo.svg',
+            'be-famous.svg',
+            'famous-logo-back.svg'
+        ];
+
+        images.forEach((image) => {
+            let img = new Image();
+            img.src = `images/${image}`
+        });
+    }
+
+    renderCTA() {
+        this.cta = new Node();
+        this.cta
+            .setAlign(.5, 1)
+            .setMountPoint(.5, 1)
+            .setSizeMode('absolute', 'absolute')
+            .setAbsoluteSize(120, 30);
+
+        this.cta.opacity = new Opacity(this.cta);
+        this.cta.position = new Position(this.cta);
+        this.cta.opacity.set(0);
+        this.cta.position.setY(-10);
+
+        this.cta.domEl = new DOMElement(this.cta, {
+            tagName: 'a',
+            content: 'Learn More',
+            classes: ['button'],
+            properties: {
+                'text-align': 'center',
+                'cursor': 'pointer'
+            },
+            attributes: {
+                'href': 'http://www.famous.co',
+                'target': '_blank'
+            }
+        });
+
+        this.addChild(this.cta);
+    }
+
     setEvents() {
         observers.pieceClicked.subscribe((payload) => {
             if(payload) {
                 this.initViewController(payload);
             }
+        });
+
+        observers.finishAd.subscribe((payload) => {
+           if(payload) {
+               this.initFinale();
+           }
+        });
+    }
+
+    initFinale() {
+        const duration = 750;
+
+        this.modifier.scale.set(.8, .8, .8, {
+            duration,
+            curve: Curves.inOutBack
+        });
+
+        this.cta.opacity.set(1, {
+            duration
         });
     }
 
@@ -57,8 +137,10 @@ class App extends Node {
             .setSizeMode('absolute', 'absolute')
             .setAbsoluteSize(this.model.width, this.model.height)
             .setAlign(.5, .5)
-            .setMountPoint(.5, .5);
+            .setMountPoint(.5, .5)
+            .setOrigin(.5, 0);
 
+        this.modifier.scale = new Scale(this.modifier);
         this.addChild(this.modifier);
     }
 

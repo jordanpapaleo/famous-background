@@ -1,5 +1,6 @@
 import {Observer}       from './Observer';
 
 module.exports =  {
-    pieceClicked: new Observer()
+    pieceClicked: new Observer(),
+    finishAd: new Observer()
 };
