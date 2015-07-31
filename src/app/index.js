@@ -116,7 +116,7 @@ class App extends Node {
     }
 
     initFinale() {
-        const duration = 750;
+        const duration = 1000;
 
         this.modifier.scale.set(.8, .8, .8, {
             duration,
